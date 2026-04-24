@@ -1,0 +1,7 @@
+age-key.txt
+secrets.json
+contacts.json
+line_contacts.json
+*.pyc
+__pycache__/
+.env
