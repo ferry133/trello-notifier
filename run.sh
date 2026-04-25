@@ -7,8 +7,8 @@ if [ -z "$AGE_SECRET_KEY" ]; then
   exit 1
 fi
 
-# 安裝依賴
-pip3 install -q requests
+# 安裝依賴（若環境允許）
+pip3 install -q requests 2>/dev/null || true
 
 # 確認 sops 存在
 if ! command -v sops &>/dev/null; then
