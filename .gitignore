@@ -1,8 +1,9 @@
-age-key.txt
-key.txt
-secrets.json
-contacts.json
-line_contacts.json
 *.pyc
 __pycache__/
 .env
+*.oldbackup.*
+gantt.csv
+key.txt
+line_contacts.json
+session.md
+.claude/
