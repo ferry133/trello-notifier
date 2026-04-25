@@ -4,7 +4,10 @@ import json
 import re
 import requests
 from datetime import date, datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 LINE_API = "https://api.line.me/v2/bot/message/push"
@@ -254,7 +257,7 @@ def build_message(items):
 
 def test_send():
     contacts = load_contacts()
-    larry_id = contacts.get("Larry")
+    larry_id = contacts.get("larry")
     if not larry_id:
         print("找不到 Larry 的 LINE ID")
         return
