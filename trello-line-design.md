@@ -19,9 +19,14 @@ Larry 希望建立自動化流程：由 Claude 定時檢查 Trello 看板狀態�
 ## 系統架構
 
 ```
-每日定時觸發（Claude Code Cron）
+GitHub Actions → GHCR (ghcr.io/ferry133/trello-notifier)
          ↓
-  Claude 讀取 Trello 看板
+Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
+  ├─ morning  09:00 Mon–Sat
+  ├─ noon     12:00 Mon–Sat
+  └─ evening  18:00 Mon–Sat
+         ↓
+  trello_line_notifier.py [morning|noon|evening]
   （[AI by Larry] 工作區所有看板）
          ↓
   比對九項通知條件
@@ -115,18 +120,18 @@ Larry 希望建立自動化流程：由 Claude 定時檢查 Trello 看板狀態�
 - 取得 Channel Access Token 和 Channel Secret
 
 ### 步驟二：建立姓名 → LINE ID 對應表
-新增檔案 `contacts.enc.json`（SOPS 加密），統一管理所有聯絡人：
-```json
-{
-  "曾宇晟": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "張師傅": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "SA": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "Larry": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-}
+在 jg-jiahd repo 的 `configmap.yaml` 管理聯絡人：
+```yaml
+data:
+  line_contacts.json: |
+    {
+      "Larry": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "SA":    "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "曾宇晟": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
 ```
-- 之後設定只需寫名字，不需接觸 LINE ID
-- 新增聯絡人只要更新這一個檔案
-- 執行時由 `run.sh` 解密為 `line_contacts.json`（不 commit）
+- 掛載至容器內 `/app/line_contacts.json`
+- 新增聯絡人只需更新 ConfigMap
 
 ### 步驟三：建立通知腳本
 - 檔案：`trello_line_notifier.py`
@@ -164,14 +169,12 @@ Larry 希望建立自動化流程：由 Claude 定時檢查 Trello 看板狀態�
 ```
 
 ### 步驟四：設定環境變數
-所有 API 金鑰加密存於 `secrets.enc.json`，由 `run.sh` 解密後注入環境變數：
+API 金鑰以 Kubernetes Secret（`trello-notifier-secret`）管理，透過 `envFrom` 注入：
 - `TRELLO_API_KEY` / `TRELLO_TOKEN`
-- `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_CHANNEL_SECRET`
-
-執行時需提供 `AGE_SECRET_KEY` 環境變數（只在本機設定，不存入任何檔案）。
+- `LINE_CHANNEL_ACCESS_TOKEN`
 
 ### 步驟五：建立 Cron 排程
-在 on-prem k8s 部署三個 CronJob（`timeZone: Asia/Taipei`）：
+在 on-prem k8s 部署三個 CronJob（`timeZone: Asia/Taipei`），位於 jg-jiahd repo：
 - `morning`：Mon~Sat 09:00 — 條件 #2、#4、#9 每日摘要
 - `noon`：Mon~Sat 12:00 — 條件 #1、#3、#7、#8
 - `evening`：Mon~Sat 18:00 — 條件 #5、#6（#6 僅 Mon~Fri）
@@ -182,16 +185,13 @@ Flux GitOps 路徑：`kubernetes/apps/default/trello-notifier/`
 
 ## 關鍵檔案
 
-所有檔案皆位於專案資料夾 `/home/claude/coding/jiahd-trello-notifier/`：
-
-| 檔案 | 說明 |
+| 檔案／位置 | 說明 |
 |------|------|
 | `trello_line_notifier.py` | 主通知腳本 |
-| `run.sh` | 執行入口，負責 SOPS 解密後執行腳本 |
-| `contacts.enc.json` | 加密的聯絡人 LINE ID 對應表 |
-| `secrets.enc.json` | 加密的 API 金鑰 |
-| `line_contacts.json` | 解密後的聯絡人表（runtime 產生，不 commit）|
-| `~/.claude/settings.json` | Claude Code 設定（env vars、hooks）|
+| `Dockerfile` | 容器映像建置，推送至 GHCR |
+| `jg-jiahd/kubernetes/apps/default/trello-notifier/app/cronjobs.yaml` | 三個 CronJob 定義 |
+| `jg-jiahd/kubernetes/apps/default/trello-notifier/app/configmap.yaml` | 聯絡人 LINE ID 對應表 |
+| `jg-jiahd/kubernetes/apps/default/trello-notifier/app/secret.sops.yaml` | 加密的 API 金鑰 |
 
 ---
 

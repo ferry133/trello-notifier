@@ -3,7 +3,5 @@ __pycache__/
 .env
 *.oldbackup.*
 gantt.csv
-key.txt
-line_contacts.json
 session.md
 .claude/
