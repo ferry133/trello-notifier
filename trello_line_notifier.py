@@ -76,7 +76,7 @@ def get_cards(board_id):
 
 
 ITEM_RE = re.compile(
-    r"\[@((?:\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.+)"
+    r"\[@((?:\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.*)"
 )
 NAME_RE = re.compile(r"\(([^)]+)\)")
 
@@ -153,6 +153,8 @@ def run_checks(mode):
                 parsed = parse_tag(first_line)
                 if parsed:
                     names, start, end, end_time, label = parsed
+                    if not label:
+                        label = card["name"]
                     check_item(names, start, end, end_time, label, contacts, board_name, list_name, card["name"], notifications, mode)
                     if mode == "morning":
                         summary_items.append((board_name, f"・{list_name}/{card['name']}（{label}）"))

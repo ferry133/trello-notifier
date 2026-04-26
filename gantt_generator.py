@@ -29,8 +29,8 @@ ITEM_RE = re.compile(
 )
 NAME_RE = re.compile(r"\(([^)]+)\)")
 
-# 甘特圖時間範圍：26 週，從 2026-04-27 起
-GANTT_START = date(2026, 4, 27)
+# 甘特圖時間範圍：26 週，從 2026-04-26（週日）起
+GANTT_START = date(2026, 4, 26)
 GANTT_WEEKS = 26
 WEEKS = [GANTT_START + timedelta(weeks=i) for i in range(GANTT_WEEKS)]
 
