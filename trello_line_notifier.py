@@ -14,7 +14,7 @@ LINE_API = "https://api.line.me/v2/bot/message/push"
 LINE_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
 TRELLO_KEY = os.environ.get("TRELLO_API_KEY", "")
 TRELLO_TOKEN = os.environ.get("TRELLO_TOKEN", "")
-WORKSPACE_ID = "jia.homedesign"
+WORKSPACE_ID = "jiahomedesign1"
 
 CONTACTS_FILE = os.path.join(os.path.dirname(__file__), "line_contacts.json")
 

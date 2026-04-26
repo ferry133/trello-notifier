@@ -14,7 +14,7 @@
  * 甘特欄：每欄一天，26 週共 182 欄，奇偶週交替底色，bar 以狀態色標示
  */
 
-const WORKSPACE_ID = "jia.homedesign";
+const WORKSPACE_ID = "jiahomedesign1";
 const SHEET_NAME   = "gantt";
 const GANTT_START  = new Date(2026, 3, 26); // 2026-04-26（週日，月份從 0 起算）
 const GANTT_WEEKS  = 26;
