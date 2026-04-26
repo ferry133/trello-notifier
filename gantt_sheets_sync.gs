@@ -14,7 +14,7 @@
  * 甘特欄：每欄一天，26 週共 182 欄，奇偶週交替底色，bar 以狀態色標示
  */
 
-const WORKSPACE_ID = "69e43323c25d72247983debe";
+const WORKSPACE_ID = "jia.homedesign";
 const SHEET_NAME   = "gantt";
 const GANTT_START  = new Date(2026, 3, 26); // 2026-04-26（週日，月份從 0 起算）
 const GANTT_WEEKS  = 26;
@@ -31,7 +31,7 @@ const BAR_COLORS = {
 };
 
 // 奇偶週交替底色（無 bar 時顯示）
-const BAND = ["#ffffff", "#f3f3f3"];
+const BAND = ["#ffffff", "#d9d9d9"];
 
 
 // ─── 工具函式 ──────────────────────────────────────────────
@@ -63,7 +63,7 @@ function parseDate_(str) {
 }
 
 function parseTag_(text) {
-  const m = text.trim().match(/^\[@((?:\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.*)/);
+  const m = text.trim().match(/^\[@((?:@?\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.*)/);
   if (!m) return null;
   const names = [];
   let nm;
@@ -105,7 +105,7 @@ function collectItems_() {
         const parsed = parseTag_(card.desc.split("\n")[0]);
         if (parsed) {
           rows.push({ board: board.name, list: listName, card: card.name,
-            label: parsed.label || card.name,  // 無標籤文字時以卡片名稱代替
+            label: parsed.label,
             names: parsed.names.join("、"),
             start: parsed.start, end: parsed.end, state: "" });
         }
@@ -145,6 +145,9 @@ function syncTrelloGantt() {
   // 甘特欄寬：每欄 22px，視覺緊湊
   sheet.setColumnWidths(9, GANTT_DAYS, 22);
 
+  // 預計算每天的奇偶週底色（標題列與資料列共用）
+  const bandRow = days.map((d, i) => BAND[Math.floor(i / 7) % 2]);
+
   // 標題列 1：每週日顯示 "mm/dd~mm/dd"（週日~週六），其餘留空
   const row1 = Array(8).fill("").concat(
     days.map(d => {
@@ -159,8 +162,17 @@ function syncTrelloGantt() {
     days.map(d => DOW_ZH[d.getDay()])
   );
 
+  // 解除既有合併 → 寫入值 → 每週 7 欄合併為一格
+  sheet.getRange(1, 9, 1, GANTT_DAYS).breakApart();
   sheet.getRange(1, 1, 1, row1.length).setValues([row1]);
   sheet.getRange(2, 1, 1, row2.length).setValues([row2]);
+  for (let w = 0; w < GANTT_WEEKS; w++) {
+    sheet.getRange(1, 9 + w * 7, 1, 7).merge();
+  }
+
+  // 標題列甘特區塊套用奇偶週底色
+  sheet.getRange(1, 9, 1, GANTT_DAYS).setBackgrounds([bandRow]);
+  sheet.getRange(2, 9, 1, GANTT_DAYS).setBackgrounds([bandRow]);
 
   // 清除舊資料與舊顏色（第 3 列起）
   const lastRow = sheet.getLastRow();
@@ -168,6 +180,7 @@ function syncTrelloGantt() {
     const clearRange = sheet.getRange(3, 1, lastRow - 2, 8 + GANTT_DAYS);
     clearRange.clearContent();
     clearRange.setBackground("#ffffff");
+    clearRange.setFontColor("#000000");
   }
 
   // 取得最新 Trello 資料
@@ -176,9 +189,6 @@ function syncTrelloGantt() {
     sheet.getRange(3, 1).setValue("（無符合標記的工項）");
     return;
   }
-
-  // 預計算每天的奇偶週底色（不含 bar）
-  const bandRow = days.map((d, i) => BAND[Math.floor(i / 7) % 2]);
 
   // 組成資料矩陣與甘特色票矩陣
   const dataRows   = [];
@@ -214,6 +224,13 @@ function syncTrelloGantt() {
 
   // 套用甘特背景色（第 9 欄起）
   sheet.getRange(3, 9, ganttBgAll.length, GANTT_DAYS).setBackgrounds(ganttBgAll);
+
+  // 逾期行：結束日欄（G）顯示紅色
+  const endColColors = items.map(r => {
+    const isOverdue = r.end && r.end < today && r.state !== "complete";
+    return [isOverdue ? "#ea4335" : "#000000"];
+  });
+  sheet.getRange(3, 7, items.length, 1).setFontColors(endColColors);
 
   // 時間戳記
   sheet.getRange(3 + dataRows.length + 1, 1)

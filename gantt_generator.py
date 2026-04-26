@@ -22,10 +22,10 @@ except ImportError:
 TAIPEI = ZoneInfo("Asia/Taipei")
 TRELLO_KEY = os.environ.get("TRELLO_API_KEY", "")
 TRELLO_TOKEN = os.environ.get("TRELLO_TOKEN", "")
-WORKSPACE_ID = "69e43323c25d72247983debe"
+WORKSPACE_ID = "jia.homedesign"
 
 ITEM_RE = re.compile(
-    r"\[@((?:\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.+)"
+    r"\[@((?:@?\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.+)"
 )
 NAME_RE = re.compile(r"\(([^)]+)\)")
 

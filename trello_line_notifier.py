@@ -14,7 +14,7 @@ LINE_API = "https://api.line.me/v2/bot/message/push"
 LINE_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
 TRELLO_KEY = os.environ.get("TRELLO_API_KEY", "")
 TRELLO_TOKEN = os.environ.get("TRELLO_TOKEN", "")
-WORKSPACE_ID = "69e43323c25d72247983debe"
+WORKSPACE_ID = "jia.homedesign"
 
 CONTACTS_FILE = os.path.join(os.path.dirname(__file__), "line_contacts.json")
 
@@ -76,7 +76,7 @@ def get_cards(board_id):
 
 
 ITEM_RE = re.compile(
-    r"\[@((?:\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.*)"
+    r"\[@((?:@?\([^)]+\))+),(\d{8})?-?(\d{8})?(?::(\d{4}))?\](.*)"
 )
 NAME_RE = re.compile(r"\(([^)]+)\)")
 
