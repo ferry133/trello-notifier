@@ -100,12 +100,12 @@ Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
 
 | # | 檢查時間 | 條件 | 通知對象 | 訊息內容 |
 |---|---------|------|---------|---------|
-| 1 | Mon~Sat 12:00 | 今天距離**開始日**剩 7 / 3 / 1 天 | sponsor | 「[工項名稱] X 天後開始，請準備」 |
+| 1 | Sun~Sat 12:00 | 今天距離**開始日**剩 1～7 天（每日） | sponsor | 「[工項名稱] X 天後開始，請準備」 |
 | 2 | Mon~Sat 09:00 | 今天 = 開始日 | sponsor | 「[工項名稱] 今日開始，請確認」 |
-| 3 | Mon~Sat 12:00 | 今天距離**結束日**剩 3 / 1 天 | sponsor + SA/Larry | 「[工項名稱] X 天後到期」 |
-| 4 | Mon~Sat 09:00 | 今天 = 結束日（時間未到） | sponsor + SA/Larry | 「[工項名稱] 今日（HH:MM）到期，請確認」 |
-| 5 | Mon~Sat 18:00 | 今天 = 結束日（時間已過，需有 `:HHMM`） | sponsor + SA/Larry | 「[工項名稱] 今日 HH:MM 已逾期，請確認」 |
-| 6 | Mon~Fri 18:00 | 結束日已過期 | sponsor + SA/Larry | 「[工項名稱] 已逾期 X 天，請確認」 |
+| 3 | Sun~Sat 12:00 | 今天距離**結束日**剩 1～7 天（每日）且**未完成** | sponsor + SA/Larry | 「[工項名稱] X 天後到期」 |
+| 4 | Mon~Sat 09:00 | 今天 = 結束日（時間未到）且**未完成** | sponsor + SA/Larry | 「[工項名稱] 今日（HH:MM）到期，請確認」 |
+| 5 | Mon~Sat 18:00 | 今天 = 結束日（時間已過，需有 `:HHMM`）且**未完成** | sponsor + SA/Larry | 「[工項名稱] 今日 HH:MM 已逾期，請確認」 |
+| 6 | Mon~Fri 18:00 | 結束日已過期且**未完成** | sponsor + SA/Larry | 「[工項名稱] 已逾期 X 天，請確認」 |
 | 7 | Mon~Sat 12:00 | Checklist 停滯超過 3 天（該 checklist 需有 `[@...]` 標記） | SA / Larry | 「[卡片名稱] 已停滯 X 天，請追蹤」 |
 | 8 | Mon~Sat 12:00 | Checklist 所有項目全部勾選（該 checklist 需有 `[@...]` 標記） | sponsor | 「[卡片名稱] 所有工項已全部完成 ✓」 |
 | 9 | Mon~Sat 09:00 | 每日固定摘要（無條件發送） | SA / Larry | 有標記工項的總覽；若無任何標記工項則顯示「今日無進行中工項」 |
@@ -122,7 +122,7 @@ Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
 ### 步驟二：建立姓名 → LINE ID 對應表
 在 jg-jiahd repo 的 `configmap.yaml` 管理聯絡人：
 ```yaml
-data:
+data:2
   line_contacts.json: |
     {
       "Larry": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
