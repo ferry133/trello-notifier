@@ -103,12 +103,22 @@ def fmt_item(list_name, card_name, body):
     return f"【{list_name}/{card_name}】\n{body}"
 
 
-def check_item(names, start, end, end_time, label, state, contacts, board_name, list_name, card_name, notifications, mode):
+def card_is_incomplete(list_name, card):
+    """card 未完成：清單為「未執行」或「執行中」，且至少一個標記工項未完成"""
+    if list_name not in ("未執行", "執行中"):
+        return False
+    for cl in card.get("checklists", []):
+        for item in cl.get("checkItems", []):
+            if parse_tag(item["name"]) and item["state"] == "incomplete":
+                return True
+    return False
+
+
+def check_item(names, start, end, end_time, label, card_incomplete, contacts, board_name, list_name, card_name, notifications, mode):
     sponsors = [contacts[n] for n in names if n in contacts]
     sa_larry = [uid for n, uid in contacts.items() if n in ("sa", "larry")]
     now_time = datetime.now(TAIPEI).time()
     is_weekday = date.today().weekday() < 5
-    is_done = state == "complete"
 
     def add(uids, body):
         item = fmt_item(list_name, card_name, body)
@@ -118,7 +128,7 @@ def check_item(names, start, end, end_time, label, state, contacts, board_name, 
     if mode == "morning":
         if start and days_diff(start) == 0:
             add(sponsors, f"「{label}」今日開始，請確認")
-        if end and days_diff(end) == 0 and not is_done:
+        if end and days_diff(end) == 0 and card_incomplete:
             if not (end_time and now_time > end_time):
                 time_str = f"（{end_time.strftime('%H:%M')}）" if end_time else ""
                 add(set(sponsors + sa_larry), f"「{label}」今日{time_str}到期，請確認")
@@ -126,13 +136,13 @@ def check_item(names, start, end, end_time, label, state, contacts, board_name, 
     elif mode == "noon":
         if start and 1 <= days_diff(start) <= 7:
             add(sponsors, f"「{label}」{days_diff(start)} 天後開始，請準備")
-        if end and 1 <= days_diff(end) <= 7 and not is_done:
+        if end and 1 <= days_diff(end) <= 7 and card_incomplete:
             add(set(sponsors + sa_larry), f"「{label}」{days_diff(end)} 天後到期")
 
     elif mode == "evening":
-        if end and days_diff(end) == 0 and end_time and now_time > end_time and not is_done:
+        if end and days_diff(end) == 0 and end_time and now_time > end_time and card_incomplete:
             add(set(sponsors + sa_larry), f"「{label}」今日 {end_time.strftime('%H:%M')} 已逾期，請確認")
-        if end and days_diff(end) < 0 and is_weekday and not is_done:
+        if end and days_diff(end) < 0 and is_weekday and card_incomplete:
             add(set(sponsors + sa_larry), f"「{label}」已逾期 {abs(days_diff(end))} 天，請確認")
 
 
@@ -148,6 +158,7 @@ def run_checks(mode):
         cards = get_cards(board["id"])
         for card in cards:
             list_name = list_map.get(card.get("idList", ""), "")
+            incomplete = card_is_incomplete(list_name, card)
 
             if card.get("desc"):
                 first_line = card["desc"].split("\n")[0]
@@ -156,7 +167,7 @@ def run_checks(mode):
                     names, start, end, end_time, label = parsed
                     if not label:
                         label = card["name"]
-                    check_item(names, start, end, end_time, label, "", contacts, board_name, list_name, card["name"], notifications, mode)
+                    check_item(names, start, end, end_time, label, incomplete, contacts, board_name, list_name, card["name"], notifications, mode)
                     if mode == "morning":
                         summary_items.append((board_name, f"・{list_name}/{card['name']}（{label}）"))
 
@@ -169,7 +180,7 @@ def run_checks(mode):
                         continue
                     has_tag = True
                     names, start, end, end_time, label = parsed
-                    check_item(names, start, end, end_time, label, item["state"], contacts, board_name, list_name, card["name"], notifications, mode)
+                    check_item(names, start, end, end_time, label, incomplete, contacts, board_name, list_name, card["name"], notifications, mode)
                     if mode == "morning":
                         summary_items.append((board_name, f"・{list_name}/{card['name']}（{label}）"))
 
