@@ -23,11 +23,11 @@ GitHub Actions → GHCR (ghcr.io/ferry133/trello-notifier)
          ↓
 Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
   ├─ morning  09:00 Mon–Sat
-  ├─ noon     12:00 Mon–Sat
+  ├─ noon     12:00 Sun–Sat
   └─ evening  18:00 Mon–Sat
          ↓
   trello_line_notifier.py [morning|noon|evening]
-  （[AI by Larry] 工作區所有看板）
+  （jiahomedesign1 工作區所有看板）
          ↓
   比對九項通知條件
          ↓
@@ -120,18 +120,17 @@ Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
 - 取得 Channel Access Token 和 Channel Secret
 
 ### 步驟二：建立姓名 → LINE ID 對應表
-在 jg-jiahd repo 的 `configmap.yaml` 管理聯絡人：
-```yaml
-data:2
-  line_contacts.json: |
-    {
-      "Larry": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      "SA":    "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      "曾宇晟": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    }
+聯絡人存放於 NAS，路徑掛載為 `knowledge/contacts.json`：
+```json
+{
+  "Larry":  { "line_id": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "projects": ["all"] },
+  "SA":     { "line_id": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "projects": ["all"] },
+  "曾宇晟": { "line_id": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+}
 ```
-- 掛載至容器內 `/app/line_contacts.json`
-- 新增聯絡人只需更新 ConfigMap
+- 名字不區分大小寫（`larry`、`Larry` 皆可）
+- 以 `備` 開頭的欄位會被略過
+- 舊格式 `{"名字": "U..."}` 仍相容
 
 ### 步驟三：建立通知腳本
 - 檔案：`trello_line_notifier.py`
@@ -176,7 +175,7 @@ API 金鑰以 Kubernetes Secret（`trello-notifier-secret`）管理，透過 `en
 ### 步驟五：建立 Cron 排程
 在 on-prem k8s 部署三個 CronJob（`timeZone: Asia/Taipei`），位於 jg-jiahd repo：
 - `morning`：Mon~Sat 09:00 — 條件 #2、#4、#9 每日摘要
-- `noon`：Mon~Sat 12:00 — 條件 #1、#3、#7、#8
+- `noon`：Sun~Sat 12:00 — 條件 #1、#3、#7、#8
 - `evening`：Mon~Sat 18:00 — 條件 #5、#6（#6 僅 Mon~Fri）
 
 Flux GitOps 路徑：`kubernetes/apps/default/trello-notifier/`
@@ -188,9 +187,11 @@ Flux GitOps 路徑：`kubernetes/apps/default/trello-notifier/`
 | 檔案／位置 | 說明 |
 |------|------|
 | `trello_line_notifier.py` | 主通知腳本 |
+| `gantt_generator.py` | 產生甘特圖 CSV |
+| `gantt_sheets_sync.gs` | Google Apps Script 即時同步甘特圖 |
 | `Dockerfile` | 容器映像建置，推送至 GHCR |
+| `knowledge/contacts.json` | 聯絡人 LINE ID 對應表（NAS 掛載） |
 | `jg-jiahd/kubernetes/apps/default/trello-notifier/app/cronjobs.yaml` | 三個 CronJob 定義 |
-| `jg-jiahd/kubernetes/apps/default/trello-notifier/app/configmap.yaml` | 聯絡人 LINE ID 對應表 |
 | `jg-jiahd/kubernetes/apps/default/trello-notifier/app/secret.sops.yaml` | 加密的 API 金鑰 |
 
 ---
@@ -210,4 +211,8 @@ Flux GitOps 路徑：`kubernetes/apps/default/trello-notifier/`
 
 ---
 
-*最後更新：2026-04-25，持續修正中*
+**card 未完成定義（#3～#6 共用）：** 清單名稱為「未執行」或「執行中」，且 card 內至少有一個標記工項未完成。
+
+---
+
+*最後更新：2026-04-29，持續修正中*
