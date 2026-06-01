@@ -83,7 +83,7 @@ def week_overlaps(week_start, start, end):
     elif start:
         return week_end >= start
     elif end:
-        return week_start <= end
+        return week_start <= end <= week_start + timedelta(days=6)
     return False
 
 
