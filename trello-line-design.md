@@ -71,7 +71,7 @@ Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
 這是一張說明卡片...
 ```
 
-- `@(name)`：通知對象，對應 `line_contacts.json` 裡的姓名，可多人；**名字不區分大小寫**（`larry`、`Larry`、`LARRY` 皆可）
+- `@(name)`：通知對象，對應 DB `line_users.alias_name`，可多人；**名字不區分大小寫**（`larry`、`Larry`、`LARRY` 皆可）
 - 日期區間：用於判斷所有時間條件
 - **沒有 `[@(...)]` 格式的項目或描述，系統完全略過，不會觸發任何通知**
 
@@ -120,17 +120,21 @@ Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
 - 取得 Channel Access Token 和 Channel Secret
 
 ### 步驟二：建立姓名 → LINE ID 對應表
-聯絡人存放於 NAS，路徑掛載為 `knowledge/contacts.json`：
-```json
-{
-  "Larry":  { "line_id": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "projects": ["all"] },
-  "SA":     { "line_id": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "projects": ["all"] },
-  "曾宇晟": { "line_id": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
-}
+
+聯絡人統一儲存於 PostgreSQL `line_users` 資料表（linebot DB）：
+
+| 欄位 | 說明 |
+|------|------|
+| `line_id` | LINE User ID（`U...`） |
+| `alias_name` | 短識別名，對應 Trello 標記（如 `larry`、`sa`、`yan`），不區分大小寫 |
+| `role` | `admin` / `employee` / `vendor` / `customer` / `visitor` |
+
+通知腳本透過 `alias_name` 查詢 LINE ID：
+```sql
+SELECT alias_name, line_id FROM line_users WHERE alias_name = ANY(%s)
 ```
-- 名字不區分大小寫（`larry`、`Larry` 皆可）
-- 以 `備` 開頭的欄位會被略過
-- 舊格式 `{"名字": "U..."}` 仍相容
+
+新增聯絡人只需在 DB 設定 `alias_name`，不需修改程式。
 
 ### 步驟三：建立通知腳本
 - 檔案：`trello_line_notifier.py`
@@ -138,7 +142,7 @@ Kubernetes CronJob（jg-jiahd repo，timeZone: Asia/Taipei）
   1. 呼叫 Trello API 讀取所有看板與卡片
   2. 解析 checklist 項目和 card description 中的 `[@(name),date]` 格式
   3. 依 mode（morning / noon / evening）比對對應的觸發條件
-  4. 從 `line_contacts.json` 查詢 LINE ID
+  4. 從 DB `line_users`（`alias_name`）查詢 LINE ID
   5. 每位收件人**只發一則訊息**，彙整當次所有通知，以 board 為單位分組顯示
 
 **訊息格式範例：**
@@ -178,7 +182,7 @@ API 金鑰以 Kubernetes Secret（`trello-notifier-secret`）管理，透過 `en
 - `noon`：Sun~Sat 12:00 — 條件 #1、#3、#7、#8
 - `evening`：Mon~Sat 18:00 — 條件 #5、#6（#6 僅 Mon~Fri）
 
-Flux GitOps 路徑：`kubernetes/apps/default/trello-notifier/`
+Flux GitOps 路徑：`jg-jiahd/kubernetes/apps/extras/default/trello-notifier/`（linebot namespace）
 
 ---
 
@@ -186,13 +190,13 @@ Flux GitOps 路徑：`kubernetes/apps/default/trello-notifier/`
 
 | 檔案／位置 | 說明 |
 |------|------|
-| `trello_line_notifier.py` | 主通知腳本 |
+| `linebot/trello_line_notifier.py` | 主通知腳本（production） |
+| `linebot/shared/db.py` | PostgreSQL 連線池 |
 | `gantt_generator.py` | 產生甘特圖 CSV |
 | `gantt_sheets_sync.gs` | Google Apps Script 即時同步甘特圖 |
-| `Dockerfile` | 容器映像建置，推送至 GHCR |
-| `knowledge/contacts.json` | 聯絡人 LINE ID 對應表（NAS 掛載） |
-| `jg-jiahd/kubernetes/apps/default/trello-notifier/app/cronjobs.yaml` | 三個 CronJob 定義 |
-| `jg-jiahd/kubernetes/apps/default/trello-notifier/app/secret.sops.yaml` | 加密的 API 金鑰 |
+| `linebot/Dockerfile` | 容器映像建置，推送至 GHCR |
+| `jg-jiahd/kubernetes/apps/extras/default/trello-notifier/` | 三個 CronJob 定義（linebot namespace） |
+| `jg-jiahd/kubernetes/components/sops/cluster-secrets.sops.yaml` | 加密的 API 金鑰（含 DATABASE_URL） |
 
 ---
 

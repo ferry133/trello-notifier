@@ -68,20 +68,15 @@ trello_line_notifier.py [morning|noon|evening]
 
 ### 4. 更新聯絡人資料
 
-聯絡人存放於 NAS，路徑掛載為 `knowledge/contacts.json`，格式：
+聯絡人統一儲存於 PostgreSQL `line_users` 資料表（linebot DB）：
 
-```json
-{
-  "Larry":  { "line_id": "U...", "projects": ["all"] },
-  "SA":     { "line_id": "U...", "projects": ["all"] },
-  "曾宇晟": { "line_id": "U...", "projects": ["jiahd"] },
-  "張師傅": { "line_id": "U..." }
-}
-```
+| 欄位 | 說明 |
+|------|------|
+| `line_id` | LINE User ID（`U...`），透過 LINE webhook 自動註冊 |
+| `alias_name` | 短識別名，對應 Trello 標記（如 `larry`、`sa`），不區分大小寫 |
+| `role` | `admin` / `employee` / `vendor` / `customer` |
 
-- 名字不區分大小寫（Trello 標記中的 `@(Larry)` / `@(larry)` 皆可對應）
-- 以 `備` 開頭的欄位會被略過（可用於備份舊 ID）
-- 舊格式 `{"名字": "U..."}` 仍相容
+新增聯絡人只需在 DB 設定 `alias_name` 即可，不需修改程式或任何設定檔。
 
 ### 5. 更新 Kubernetes Secret
 
@@ -109,7 +104,7 @@ ghcr.io/ferry133/trello-notifier:latest
 
 ### 7. 部署至 Kubernetes（Flux 自動同步）
 
-Flux 每 1 小時同步一次 jg-jiahd repo，自動套用 ConfigMap、Secret、CronJob。也可手動觸發：
+Flux 每 1 小時同步一次 jg-jiahd repo，自動套用 Secret、CronJob。也可手動觸發：
 
 ```bash
 flux reconcile kustomization trello-notifier
