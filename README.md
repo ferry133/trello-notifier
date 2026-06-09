@@ -1,5 +1,10 @@
 # jiahd-trello-notifier
 
+> ⚠️ **LEGACY — 已併入 [`linebot`](https://github.com/ferry133/linebot) repo，部署上不再使用。**
+> Production 的通知系統跑的是 `ghcr.io/ferry133/linebot` image（見 jg-base 的 `trello-notifier` CronJob），
+> 對應 linebot repo 的 `trello_line_notifier.py`。本 repo 與 linebot 的版本已分岔，僅作歷史查閱。
+> **新的修改請一律在 linebot repo 進行**，設計文件以 linebot 的 `trello-line-design.md` 為單一權威來源。
+
 意念情境室內裝修 — Trello 自動監控 + LINE 通知系統
 
 ## 架構
